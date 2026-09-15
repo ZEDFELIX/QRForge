@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, AlertTriangle, ShieldCheck, QrCode } from 'lucide-react'
-import { drawQr, contrastRatio } from '../utils/qrGenerator.js'
+import { drawQrAsync, contrastRatio } from '../utils/qrGenerator.js'
 
 export default function QRPreview({
   payload, type, fields, fg, bg, size, margin, errorCorrection,
@@ -12,16 +12,19 @@ export default function QRPreview({
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || !payload) return
-    try {
-      drawQr(canvas, payload, {
-        fg, bg, size: 512, margin, errorCorrection, rounded, logoDataUrl, logoRatio
+    let cancelled = false
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    drawQrAsync(canvas, payload, {
+      fg, bg, size: 512, margin, errorCorrection, rounded, logoDataUrl, logoRatio
+    })
+      .then(() => {
+        if (!cancelled) setRatio(contrastRatio(fg || '#111827', bg || '#ffffff'))
       })
-      setRatio(contrastRatio(fg || '#111827', bg || '#ffffff'))
-    } catch (e) {
-      // oversized content -> leave empty; handled by error state in parent
-      const ctx = canvas.getContext('2d')
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-    }
+      .catch(() => {
+        // oversized content etc -> leave empty; parent shows errors
+      })
+    return () => { cancelled = true }
   }, [payload, fg, bg, margin, errorCorrection, rounded, logoDataUrl, logoRatio])
 
   const lowContrast = ratio !== 0 && ratio < 2

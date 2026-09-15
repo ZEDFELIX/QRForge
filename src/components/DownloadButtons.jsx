@@ -7,13 +7,13 @@ const HI_RES = 1024
 export default function DownloadButtons({ disabled, rasterize, generateSvg, title }) {
   const [copied, setCopied] = useState(false)
 
-  const handleDownload = (format) => {
+  const handleDownload = async (format) => {
     if (disabled) return
     try {
       if (format === 'svg') {
         downloadSvg(generateSvg(), `${title}-qr`)
       } else {
-        const canvas = rasterize(HI_RES)
+        const canvas = await rasterize(HI_RES)
         downloadCanvasAs(canvas, format, `${title}-qr`)
       }
     } catch {
@@ -24,7 +24,7 @@ export default function DownloadButtons({ disabled, rasterize, generateSvg, titl
   const handleCopy = async () => {
     if (disabled) return
     try {
-      const canvas = rasterize(512)
+      const canvas = await rasterize(512)
       await copyCanvasToClipboard(canvas)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
@@ -33,7 +33,7 @@ export default function DownloadButtons({ disabled, rasterize, generateSvg, titl
     }
   }
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (disabled) return
     // open a dedicated print surface using the same rasterizer
     const win = window.open('', '_blank', 'width=560,height=760')
@@ -41,7 +41,7 @@ export default function DownloadButtons({ disabled, rasterize, generateSvg, titl
       alert('Please allow pop-ups to print.')
       return
     }
-    const canvas = rasterize(HI_RES)
+    const canvas = await rasterize(HI_RES)
     const dataUrl = canvas.toDataURL('image/png')
     const html = `<!doctype html>
 <html><head><meta charset="utf-8"/><title>Print QR Code</title>

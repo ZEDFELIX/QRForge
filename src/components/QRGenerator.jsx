@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { QR_TYPES, buildPayload, drawQr, qrToSvg, contrastRatio, effectiveEC } from '../utils/qrGenerator.js'
+import { QR_TYPES, buildPayload, drawQrAsync, qrToSvg, contrastRatio, effectiveEC } from '../utils/qrGenerator.js'
 import { validateType } from '../utils/validators.js'
 import QRTypeSelector from './QRTypeSelector.jsx'
 import QRCustomization from './QRCustomization.jsx'
@@ -63,9 +63,9 @@ export default function QRGenerator() {
   const hasLogo = Boolean(logoDataUrl)
   const ec = effectiveEC(errorCorrection, hasLogo)
 
-  const rasterize = useCallback((targetSize) => {
+  const rasterize = useCallback(async (targetSize) => {
     const c = document.createElement('canvas')
-    drawQr(c, payload, {
+    await drawQrAsync(c, payload, {
       fg,
       bg,
       size: targetSize || size,

@@ -4,6 +4,23 @@ import { normalizeHex } from './validators.js'
 const EC_DEFAULT = 'M'
 const LOGO_EC = 'H'
 
+const logoCache = new Map()
+
+function loadLogoImage(dataUrl) {
+  if (logoCache.has(dataUrl)) return logoCache.get(dataUrl)
+  const promise = new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => {
+      logoCache.delete(dataUrl)
+      reject(new Error('Logo image could not be loaded.'))
+    }
+    img.src = dataUrl
+  })
+  logoCache.set(dataUrl, promise)
+  return promise
+}
+
 export const QR_TYPES = [
   { id: 'url', label: 'URL', icon: 'Link' },
   { id: 'text', label: 'Plain Text', icon: 'Type' },
@@ -87,6 +104,30 @@ function getMatrix(payload, errorCorrection) {
 // Draw a QR code onto a canvas. Pure browser drawing — sharp, standard margin,
 // optional rounded modules, optional centered logo with white backing.
 export function drawQr(canvas, payload, opts) {
+  const { logoDataUrl = null } = opts || {}
+  const logoImg = logoDataUrl && logoCache.has(logoDataUrl) ? logoCache.get(logoDataUrl) : null
+  if (logoDataUrl && logoImg) {
+    return drawQrCore(canvas, payload, opts, logoImg)
+  }
+  return drawQrCore(canvas, payload, opts, null)
+}
+
+// Async variant: waits for a (possibly not-yet-loaded) logo before drawing.
+export async function loadLogoAsync(logoDataUrl) {
+  if (!logoDataUrl) return null
+  return loadLogoImage(logoDataUrl)
+}
+
+export async function drawQrAsync(canvas, payload, opts) {
+  const { logoDataUrl = null } = opts || {}
+  let logoImg = null
+  if (logoDataUrl) {
+    logoImg = await loadLogoImage(logoDataUrl)
+  }
+  return drawQrCore(canvas, payload, opts, logoImg)
+}
+
+function drawQrCore(canvas, payload, opts, logoImg) {
   const {
     fg = '#111827',
     bg = '#ffffff',
@@ -132,14 +173,12 @@ export function drawQr(canvas, payload, opts) {
   }
   ctx.fill()
 
-  if (logoDataUrl) drawLogo(ctx, canvas, logoDataUrl, logoRatio, size)
+  if (logoDataUrl && logoImg) drawLogo(ctx, canvas, logoImg, logoRatio, size)
 
   return { matrixSize: n, ratios: [fgHex, bgHex] }
 }
 
-function drawLogo(ctx, canvas, logoDataUrl, logoRatio, size) {
-  const img = new Image()
-  img.src = logoDataUrl
+function drawLogo(ctx, canvas, img, logoRatio, size) {
   const box = Math.round(size * logoRatio)
   const padding = Math.max(4, Math.round(box * 0.09))
   const x = (size - box) / 2
@@ -155,19 +194,12 @@ function drawLogo(ctx, canvas, logoDataUrl, logoRatio, size) {
   }
   ctx.fill()
 
-  // wait for image, draw contained
-  if (img.complete && img.naturalWidth) {
-    ctx.drawImage(img, x, y, box, box)
-  } else {
-    img.onload = () => {
-      const iw = img.naturalWidth
-      const ih = img.naturalHeight
-      const scale = Math.min(box / iw, box / ih)
-      const dw = Math.floor(iw * scale)
-      const dh = Math.floor(ih * scale)
-      ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh)
-    }
-  }
+  const iw = img.naturalWidth
+  const ih = img.naturalHeight
+  const scale = Math.min(box / iw, box / ih)
+  const dw = Math.floor(iw * scale)
+  const dh = Math.floor(ih * scale)
+  ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh)
 }
 
 // Build an SVG string for download (vector, crisp, with optional embedded logo).
