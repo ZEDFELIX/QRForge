@@ -1,8 +1,9 @@
-import { Search, Instagram, Mail, MessageCircle, Globe, Wifi, User, MapPin } from 'lucide-react'
+import { Search, Instagram, Mail, MessageCircle, Globe, Wifi, User, MapPin, CreditCard } from 'lucide-react'
 
 const EXAMPLES = [
   { id: 'google', label: 'Google', icon: Search, type: 'url', fields: { url: 'https://www.google.com' } },
-  { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, type: 'url', fields: { url: 'https://wa.me/254700000000' } },
+  { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, type: 'whatsapp', fields: { whatsappNumber: '254700000000', whatsappMessage: 'Hello from QRForge!' } },
+  { id: 'mpesa', label: 'M-Pesa', icon: CreditCard, type: 'payment', fields: { payBusinessName: 'Acme Coffee', payTillNumber: '123456', payAccountNo: 'Order #1', payInstructions: 'Scan to pay via M-Pesa' } },
   { id: 'instagram', label: 'Instagram', icon: Instagram, type: 'url', fields: { url: 'https://www.instagram.com/' } },
   { id: 'website', label: 'Website', icon: Globe, type: 'url', fields: { url: 'https://example.com' } },
   { id: 'email', label: 'Email', icon: Mail, type: 'email', fields: { email: 'hello@example.com', emailSubject: '', emailBody: '' } },

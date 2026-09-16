@@ -29,7 +29,9 @@ export const QR_TYPES = [
   { id: 'sms', label: 'SMS', icon: 'MessageSquare' },
   { id: 'wifi', label: 'Wi-Fi', icon: 'Wifi' },
   { id: 'contact', label: 'Contact', icon: 'User' },
-  { id: 'location', label: 'Location', icon: 'MapPin' }
+  { id: 'location', label: 'Location', icon: 'MapPin' },
+  { id: 'whatsapp', label: 'WhatsApp', icon: 'MessageCircle' },
+  { id: 'payment', label: 'Payment', icon: 'CreditCard' }
 ]
 
 // Build the exact payload string that gets encoded into the QR matrix.
@@ -67,6 +69,21 @@ export function buildPayload(type, fields) {
       return buildVCard(fields)
     case 'location':
       return `https://maps.google.com/maps?q=${String(fields.lat).trim()},${String(fields.lng).trim()}`
+    case 'whatsapp': {
+      const digits = (fields.whatsappNumber || '').replace(/[^\d]/g, '')
+      const msg = fields.whatsappMessage ? `?text=${encodeURIComponent(fields.whatsappMessage)}` : ''
+      return `https://wa.me/${digits}${msg}`
+    }
+    case 'payment': {
+      // Encodes payment INSTRUCTIONS, never processes a payment.
+      const parts = []
+      if (fields.payBusinessName) parts.push(fields.payBusinessName)
+      if (fields.payTillNumber) parts.push(`M-Pesa Till: ${fields.payTillNumber}`)
+      if (fields.payBusinessNumber) parts.push(`M-Pesa Paybill: ${fields.payBusinessNumber}`)
+      if (fields.payAccountNo) parts.push(`Account/Ref: ${fields.payAccountNo}`)
+      if (fields.payInstructions) parts.push(fields.payInstructions)
+      return parts.join('\n').trim()
+    }
     default:
       return ''
   }
@@ -136,7 +153,12 @@ function drawQrCore(canvas, payload, opts, logoImg) {
     errorCorrection = EC_DEFAULT,
     rounded = false,
     logoDataUrl = null,
-    logoRatio = 0.2
+    logoRatio = 0.2,
+    frameLabel = '',
+    frameLabelColor = '#ffffff',
+    ctaText = '',
+    ctaBg = '#111827',
+    ctaColor = '#ffffff'
   } = opts || {}
 
   const fgHex = normalizeHex(fg) || '#111827'
@@ -145,23 +167,43 @@ function drawQrCore(canvas, payload, opts, logoImg) {
   const { size: n, data } = getMatrix(payload, errorCorrection)
   const mod = Math.max(1, Math.floor(size / (n + 2 * margin)))
   const area = mod * (n + 2 * margin)
-  const ox = Math.floor((size - area) / 2)
-  const oy = Math.floor((size - area) / 2)
+  const qx = Math.floor((size - area) / 2)
+
+  // Frames/CTA bands live OUTSIDE the QR's own quiet zone:
+  // the QR square (size × size) stays scannable; the canvas is taller.
+  const hasFrame = Boolean(frameLabel && String(frameLabel).trim())
+  const hasCta = Boolean(ctaText && String(ctaText).trim())
+  const frameH = hasFrame ? Math.max(28, Math.round(size * 0.16)) : 0
+  const ctaH = hasCta ? Math.max(24, Math.round(size * 0.11)) : 0
+  canvas.width = size
+  canvas.height = size + frameH + ctaH
 
   const ctx = canvas.getContext('2d')
-  canvas.width = size
-  canvas.height = size
   ctx.fillStyle = bgHex
-  ctx.fillRect(0, 0, size, size)
+  ctx.fillRect(0, 0, size, canvas.height)
 
+  const qy = frameH
+
+  // Top frame banner ("SCAN ME" etc.)
+  if (hasFrame) {
+    ctx.fillStyle = frameLabelColor === 'auto' ? fgHex : normalizeHex(frameLabelColor) || fgHex
+    ctx.fillRect(0, 0, size, frameH)
+    ctx.fillStyle = '#ffffff'
+    ctx.font = `800 ${Math.round(frameH * 0.5)}px system-ui, -apple-system, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(String(frameLabel).trim().toUpperCase(), size / 2, frameH / 2 + 2)
+  }
+
+  // QR modules
   const canRound = rounded && typeof ctx.roundRect === 'function' && mod >= 4
   ctx.fillStyle = fgHex
   ctx.beginPath()
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
       if (data[r * n + c] !== 0) {
-        const x = ox + (c + margin) * mod
-        const y = oy + (r + margin) * mod
+        const x = qx + (c + margin) * mod
+        const y = qy + (r + margin) * mod
         if (canRound) {
           const rad = Math.round(mod * 0.35)
           ctx.roundRect(x, y, mod, mod, rad)
@@ -173,16 +215,29 @@ function drawQrCore(canvas, payload, opts, logoImg) {
   }
   ctx.fill()
 
-  if (logoDataUrl && logoImg) drawLogo(ctx, canvas, logoImg, logoRatio, size)
+  if (logoDataUrl && logoImg) drawLogo(ctx, canvas, logoImg, logoRatio, size, qy)
+
+  // CTA band ("Scan to Order" etc.)
+  if (hasCta) {
+    const y = size + frameH
+    ctx.fillStyle = normalizeHex(ctaBg) || bgHex
+    ctx.fillRect(0, y, size, ctaH)
+    const dot = (0.47 * ctaH)
+    ctx.font = `700 ${Math.round(ctaH * 0.42)}px system-ui, -apple-system, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = normalizeHex(ctaColor) || (normalizeHex(ctaBg) || fgHex)
+    ctx.fillText(String(ctaText).trim(), size / 2, y + ctaH / 2 + 2)
+  }
 
   return { matrixSize: n, ratios: [fgHex, bgHex] }
 }
 
-function drawLogo(ctx, canvas, img, logoRatio, size) {
+function drawLogo(ctx, canvas, img, logoRatio, size, qy = 0) {
   const box = Math.round(size * logoRatio)
   const padding = Math.max(4, Math.round(box * 0.09))
   const x = (size - box) / 2
-  const y = (size - box) / 2
+  const y = qy + (size - box) / 2
 
   // white backing
   ctx.fillStyle = '#ffffff'
@@ -199,7 +254,7 @@ function drawLogo(ctx, canvas, img, logoRatio, size) {
   const scale = Math.min(box / iw, box / ih)
   const dw = Math.floor(iw * scale)
   const dh = Math.floor(ih * scale)
-  ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh)
+  ctx.drawImage(img, (size - dw) / 2, y + (size - dh) / 2, dw, dh)
 }
 
 // Build an SVG string for download (vector, crisp, with optional embedded logo).
@@ -211,19 +266,29 @@ export function qrToSvg(payload, opts) {
     errorCorrection = EC_DEFAULT,
     rounded = false,
     logoDataUrl = null,
-    logoRatio = 0.2
+    logoRatio = 0.2,
+    frameLabel = '',
+    frameLabelColor = '#ffffff',
+    ctaText = '',
+    ctaBg = '#111827',
+    ctaColor = '#ffffff'
   } = opts || {}
   const fgHex = normalizeHex(fg) || '#111827'
   const bgHex = normalizeHex(bg) || '#ffffff'
   const { size: n, data } = getMatrix(payload, errorCorrection)
   const total = n + 2 * margin
+  const hasFrame = Boolean(frameLabel && String(frameLabel).trim())
+  const hasCta = Boolean(ctaText && String(ctaText).trim())
+  const frameH = hasFrame ? Math.max(4, Math.round(total * 0.16)) : 0
+  const ctaH = hasCta ? Math.max(3, Math.round(total * 0.11)) : 0
+  const height = total + frameH + ctaH
   const cells = []
   const radius = rounded ? 0.32 : 0
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
       if (data[r * n + c] !== 0) {
         cells.push(
-          `<rect x="${c + margin}" y="${r + margin}" width="1" height="1" rx="${radius}" ry="${radius}"/>`
+          `<rect x="${c + margin}" y="${frameH + r + margin}" width="1" height="1" rx="${radius}" ry="${radius}"/>`
         )
       }
     }
@@ -233,16 +298,27 @@ export function qrToSvg(payload, opts) {
     const box = total * logoRatio
     const pad = box * 0.09
     const x = (total - box) / 2
-    const y = (total - box) / 2
+    const y = frameH + (total - box) / 2
     logo = `<rect x="${x - pad}" y="${y - pad}" width="${box + pad * 2}" height="${box + pad * 2}" fill="#ffffff" rx="${pad * 1.6}"/>` +
       `<image x="${x}" y="${y}" width="${box}" height="${box}" preserveAspectRatio="xMidYMid meet" href="${logoDataUrl}"/>`
   }
-  const units = rounded ? 'userSpaceOnUse' : 'userSpaceOnUse'
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" shape-rendering="${rounded ? 'geometricPrecision' : 'crispEdges'}" width="${total}" height="${total}" font-family="sans-serif">` +
-    `<rect width="${total}" height="${total}" fill="${bgHex}"/>` +
-    `<g fill="${fgHex}">${cells.join('')}</g>${logo}<rect width="0" height="0" fill="none" stroke="none"/>` +
-    (units ? '' : '') +
+  const frameSvg = hasFrame
+    ? `<rect width="${total}" height="${frameH}" fill="${frameLabelColor === 'auto' ? fgHex : normalizeHex(frameLabelColor) || fgHex}"/>` +
+      `<text x="${total / 2}" y="${frameH / 2}" fill="#ffffff" font-size="${Math.round(frameH * 0.5)}" font-weight="800" text-anchor="middle" dominant-baseline="middle" style="font-family:system-ui,-apple-system,sans-serif">${escapeSvg(String(frameLabel).trim().toUpperCase())}</text>`
+    : ''
+  const ctaSvg = hasCta
+    ? `<rect x="0" y="${total + frameH}" width="${total}" height="${ctaH}" fill="${normalizeHex(ctaBg) || bgHex}"/>` +
+      `<text x="${total / 2}" y="${total + frameH + ctaH / 2}" fill="${normalizeHex(ctaColor) || (normalizeHex(ctaBg) || fgHex)}" font-size="${Math.round(ctaH * 0.42)}" font-weight="700" text-anchor="middle" dominant-baseline="middle" style="font-family:system-ui,-apple-system,sans-serif">${escapeSvg(String(ctaText).trim())}</text>`
+    : ''
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${height}" width="${total}" height="${height}" shape-rendering="${rounded ? 'geometricPrecision' : 'crispEdges'}" font-family="sans-serif">` +
+    `<rect width="${total}" height="${height}" fill="${bgHex}"/>` +
+    frameSvg +
+    `<g fill="${fgHex}">${cells.join('')}</g>${logo}${ctaSvg}` +
     `</svg>`
+}
+
+function escapeSvg(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 // Compute WCAG-ish contrast ratio between two hex colors.

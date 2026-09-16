@@ -3,6 +3,10 @@
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
+export function isValidHex(input) {
+  return Boolean(normalizeHex(input))
+}
+
 export function normalizeHex(input) {
   if (typeof input !== 'string') return null
   let v = input.trim().replace(/^#/, '')
@@ -88,6 +92,21 @@ export function validateType(type, fields) {
       if (fields?.lng === '' || fields?.lng == null || Number.isNaN(lng))
         return 'Please enter a longitude.'
       if (lng < -180 || lng > 180) return 'Longitude must be between -180 and 180.'
+      return null
+    }
+    case 'whatsapp': {
+      const digits = ((fields?.whatsappNumber || '').replace(/[^\d]/g, ''))
+      if (!digits) return 'Please enter a WhatsApp phone number.'
+      if (digits.length < 6) return 'That WhatsApp number looks too short.'
+      return null
+    }
+    case 'payment': {
+      const any =
+        (fields?.payTillNumber || '').trim() ||
+        (fields?.payBusinessNumber || '').trim() ||
+        (fields?.payAccountNo || '').trim() ||
+        (fields?.payInstructions || '').trim()
+      if (!any) return 'Add at least one payment detail (Till, Paybill, account or instructions).'
       return null
     }
     default:

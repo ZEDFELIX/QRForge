@@ -4,7 +4,7 @@ import { downloadCanvasAs, downloadSvg, copyCanvasToClipboard } from '../utils/d
 
 const HI_RES = 1024
 
-export default function DownloadButtons({ disabled, rasterize, generateSvg, title }) {
+export default function DownloadButtons({ disabled, rasterize, generateSvg, title, onDownload, downloads }) {
   const [copied, setCopied] = useState(false)
 
   const handleDownload = async (format) => {
@@ -16,6 +16,7 @@ export default function DownloadButtons({ disabled, rasterize, generateSvg, titl
         const canvas = await rasterize(HI_RES)
         downloadCanvasAs(canvas, format, `${title}-qr`)
       }
+      onDownload?.('download')
     } catch {
       alert('Download failed in this browser. Try PNG.')
     }
@@ -26,6 +27,7 @@ export default function DownloadButtons({ disabled, rasterize, generateSvg, titl
     try {
       const canvas = await rasterize(512)
       await copyCanvasToClipboard(canvas)
+      onDownload?.('copy')
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {

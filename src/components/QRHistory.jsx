@@ -94,6 +94,7 @@ export default function QRHistory({ currentPayload, type, fields, onApply }) {
             </p>
             <p className="text-xs text-slate-400">
               {new Date(it.createdAt).toLocaleDateString()} · {it.type}
+              {it.downloads > 0 && <span className="text-amber-500"> · downloaded {it.downloads}×</span>}
             </p>
             <div className="mt-2 flex gap-2">
               <button

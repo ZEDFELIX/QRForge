@@ -4,10 +4,12 @@ import { drawQrAsync, contrastRatio } from '../utils/qrGenerator.js'
 
 export default function QRPreview({
   payload, type, fields, fg, bg, size, margin, errorCorrection,
-  rounded, logoDataUrl, logoRatio, hasErrors
+  rounded, logoDataUrl, logoRatio, hasErrors,
+  frameText, frameColor, ctaText, ctaBg, ctaColor
 }) {
   const canvasRef = useRef(null)
   const [ratio, setRatio] = useState(0)
+  const [canvasH, setCanvasH] = useState(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -16,16 +18,21 @@ export default function QRPreview({
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     drawQrAsync(canvas, payload, {
-      fg, bg, size: 512, margin, errorCorrection, rounded, logoDataUrl, logoRatio
+      fg, bg, size: 512, margin, errorCorrection, rounded, logoDataUrl, logoRatio,
+      frameLabel: frameText, frameLabelColor: frameColor,
+      ctaText, ctaBg, ctaColor
     })
       .then(() => {
-        if (!cancelled) setRatio(contrastRatio(fg || '#111827', bg || '#ffffff'))
+        if (!cancelled) {
+          setRatio(contrastRatio(fg || '#111827', bg || '#ffffff'))
+          setCanvasH(canvas.height)
+        }
       })
       .catch(() => {
         // oversized content etc -> leave empty; parent shows errors
       })
     return () => { cancelled = true }
-  }, [payload, fg, bg, margin, errorCorrection, rounded, logoDataUrl, logoRatio])
+  }, [payload, fg, bg, margin, errorCorrection, rounded, logoDataUrl, logoRatio, frameText, frameColor, ctaText, ctaBg, ctaColor])
 
   const lowContrast = ratio !== 0 && ratio < 2
   const logoTooBig = Boolean(logoDataUrl) && logoRatio > 0.22
@@ -38,7 +45,11 @@ export default function QRPreview({
       <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-[repeating-conic-gradient(#f1f5f9_0%_25%,#ffffff_0%_50%)_50%/16px_16px] p-4">
         <canvas
           ref={canvasRef}
-          style={{ width: 'min(100%, 420px)', height: 'auto', aspectRatio: '1 / 1' }}
+          style={{
+            width: 'min(100%, 420px)',
+            height: 'auto',
+            aspectRatio: canvasH > 0 ? `512 / ${canvasH}` : '1 / 1'
+          }}
           className="max-w-full"
           role="img"
           aria-label="Live preview of your QR code"

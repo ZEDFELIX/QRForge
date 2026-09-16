@@ -1,12 +1,16 @@
 import { useCallback, useMemo, useState } from 'react'
-import { QR_TYPES, buildPayload, drawQrAsync, qrToSvg, contrastRatio, effectiveEC } from '../utils/qrGenerator.js'
+import { QR_TYPES, buildPayload, drawQrAsync, qrToSvg, effectiveEC } from '../utils/qrGenerator.js'
 import { validateType } from '../utils/validators.js'
+import { markDownloaded } from '../utils/storage.js'
+import { loadBrandKit } from '../utils/brand.js'
 import QRTypeSelector from './QRTypeSelector.jsx'
 import QRCustomization from './QRCustomization.jsx'
 import QRPreview from './QRPreview.jsx'
 import DownloadButtons from './DownloadButtons.jsx'
 import QuickExamples from './QuickExamples.jsx'
 import QRHistory from './QRHistory.jsx'
+import QRHealthCard from './QRHealthCard.jsx'
+import QRScanner from './QRScanner.jsx'
 
 const EMPTY_FIELDS = {
   url: 'https://example.com',
@@ -28,20 +32,34 @@ const EMPTY_FIELDS = {
   contactWebsite: '',
   contactAddress: '',
   lat: '',
-  lng: ''
+  lng: '',
+  whatsappNumber: '',
+  whatsappMessage: '',
+  payBusinessName: '',
+  payTillNumber: '',
+  payBusinessNumber: '',
+  payAccountNo: '',
+  payInstructions: ''
 }
 
-export default function QRGenerator() {
-  const [type, setType] = useState('url')
-  const [fields, setFields] = useState({ ...EMPTY_FIELDS })
-  const [fg, setFg] = useState('#111827')
-  const [bg, setBg] = useState('#FFFFFF')
+export default function QRGenerator({ initialType, initialFields, initialFg, initialBg, initialRounded }) {
+  const [type, setType] = useState(initialType || 'url')
+  const [fields, setFields] = useState({ ...EMPTY_FIELDS, ...(initialFields || {}) })
+  const [fg, setFg] = useState(initialFg || '#111827')
+  const [bg, setBg] = useState(initialBg || '#FFFFFF')
   const [size, setSize] = useState(512)
   const [margin, setMargin] = useState(4)
   const [errorCorrection, setErrorCorrection] = useState('M')
-  const [rounded, setRounded] = useState(false)
+  const [rounded, setRounded] = useState(Boolean(initialRounded))
   const [logoDataUrl, setLogoDataUrl] = useState(null)
   const [logoRatio, setLogoRatio] = useState(0.2)
+  const [frameText, setFrameText] = useState('')
+  const [frameColor, setFrameColor] = useState('auto')
+  const [ctaText, setCtaText] = useState('')
+  const [ctaBg, setCtaBg] = useState('#111827')
+  const [ctaColor, setCtaColor] = useState('#ffffff')
+  const [designLocked, setDesignLocked] = useState(false)
+  const [lockedMeta, setLockedMeta] = useState('')
 
   const setField = useCallback((key, value) => {
     setFields((f) => ({ ...f, [key]: value }))
@@ -73,10 +91,15 @@ export default function QRGenerator() {
       errorCorrection: ec,
       rounded,
       logoDataUrl,
-      logoRatio
+      logoRatio,
+      frameLabel: frameText,
+      frameLabelColor: frameColor,
+      ctaText,
+      ctaBg,
+      ctaColor
     })
     return c
-  }, [payload, fg, bg, size, margin, ec, rounded, logoDataUrl, logoRatio])
+  }, [payload, fg, bg, size, margin, ec, rounded, logoDataUrl, logoRatio, frameText, frameColor, ctaText, ctaBg, ctaColor])
 
   const generateSvg = useCallback(() => {
     return qrToSvg(payload, {
@@ -86,9 +109,14 @@ export default function QRGenerator() {
       errorCorrection: ec,
       rounded,
       logoDataUrl,
-      logoRatio
+      logoRatio,
+      frameLabel: frameText,
+      frameLabelColor: frameColor,
+      ctaText,
+      ctaBg,
+      ctaColor
     })
-  }, [payload, fg, bg, margin, ec, rounded, logoDataUrl, logoRatio])
+  }, [payload, fg, bg, margin, ec, rounded, logoDataUrl, logoRatio, frameText, frameColor, ctaText, ctaBg, ctaColor])
 
   const setTypeAndReset = (t) => {
     setType(t)
@@ -158,6 +186,26 @@ export default function QRGenerator() {
             onLogo={setLogoDataUrl}
             logoRatio={logoRatio}
             onLogoRatio={setLogoRatio}
+            hasLogo={hasLogo}
+            onApplyPreset={(p) => { setFg(p.fg); setBg(p.bg); setRounded(p.rounded) }}
+            frameText={frameText}
+            onFrameText={setFrameText}
+            frameColor={frameColor}
+            onFrameColor={setFrameColor}
+            ctaText={ctaText}
+            onCtaText={setCtaText}
+            ctaBg={ctaBg}
+            onCtaBg={setCtaBg}
+            ctaColor={ctaColor}
+            onCtaColor={setCtaColor}
+            designLocked={designLocked}
+            onToggleDesignLock={() => setDesignLocked((d) => !d)}
+            onApplyBrand={() => {
+              const brand = loadBrandKit()
+              if (brand.text) setFg(brand.text)
+              if (brand.background) setBg(brand.background)
+              if (brand.logo) setLogoDataUrl(brand.logo)
+            }}
           />
 
           <div className="card p-6">
@@ -168,11 +216,12 @@ export default function QRGenerator() {
               generateSvg={generateSvg}
               title={getTitle(type, fields)}
               payload={payload}
+              onDownload={() => markDownloaded(payload)}
             />
           </div>
         </div>
 
-        <div className="lg:sticky lg:top-24 self-start">
+        <div className="lg:sticky lg:top-24 self-start space-y-4">
           <QRPreview
             payload={payload}
             type={type}
@@ -186,7 +235,28 @@ export default function QRGenerator() {
             logoDataUrl={logoDataUrl}
             logoRatio={logoRatio}
             hasErrors={errors.length > 0}
+            frameText={frameText}
+            frameColor={frameColor}
+            ctaText={ctaText}
+            ctaBg={ctaBg}
+            ctaColor={ctaColor}
           />
+          {payload && !errors.length && (
+            <>
+              <QRHealthCard
+                fg={fg}
+                bg={bg}
+                margin={margin}
+                rounded={rounded}
+                logoDataUrl={logoDataUrl}
+                logoRatio={logoRatio}
+                errorCorrection={ec}
+                previewUrl={payload}
+                canCheckUrl={type === 'url' || type === 'whatsapp' ? Boolean(payload) : false}
+              />
+              <QRScanner expectedPayload={payload} expectedType={type} />
+            </>
+          )}
         </div>
       </div>
 
@@ -312,6 +382,17 @@ const FIELD_SCHEMAS = {
   location: [
     { key: 'lat', label: 'Latitude', required: true, placeholder: '-1.2921', inputType: 'number' },
     { key: 'lng', label: 'Longitude', required: true, placeholder: '36.8219', inputType: 'number' }
+  ],
+  whatsapp: [
+    { key: 'whatsappNumber', label: 'WhatsApp number', required: true, placeholder: '254711436169', inputType: 'tel' },
+    { key: 'whatsappMessage', label: 'Default message (optional)', placeholder: 'Hello from QRForge!', type: 'textarea', rows: 3 }
+  ],
+  payment: [
+    { key: 'payBusinessName', label: 'Business name', placeholder: 'Acme Coffee' },
+    { key: 'payTillNumber', label: 'M-Pesa Till number', placeholder: '123456' },
+    { key: 'payBusinessNumber', label: 'M-Pesa Paybill number', placeholder: '123456' },
+    { key: 'payAccountNo', label: 'Account / Reference', placeholder: 'Order #123' },
+    { key: 'payInstructions', label: 'Additional instructions', placeholder: 'Scan to pay via M-Pesa', type: 'textarea', rows: 3 }
   ]
 }
 
@@ -335,6 +416,10 @@ function getTitle(type, fields) {
       return fields.phone || 'phone'
     case 'location':
       return 'location'
+    case 'whatsapp':
+      return fields.whatsappNumber || 'whatsapp'
+    case 'payment':
+      return fields.payBusinessName || fields.payTillNumber || 'payment'
     default:
       return label
   }

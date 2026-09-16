@@ -1,59 +1,27 @@
-// localStorage-backed QR history. Everything stays on the user's device.
-const KEY = 'qrforge:history:v1'
-const LIMIT = 12
+// localStorage-backed QR code store. Everything stays on the user's device.
+// This file is the shared API used by the Home generator history AND the
+// "My Codes" dashboard. All persisted in one place (qrforge:codes:v2).
+
+import { loadAllCodes, saveCode, updateCode, deleteCode, duplicateCode, clearCodes, incrementDownload } from './folders.js'
 
 export function loadHistory() {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (!raw) return []
-    const arr = JSON.parse(raw)
-    if (!Array.isArray(arr)) return []
-    return arr.filter((it) => it && it.id && it.payload !== undefined)
-  } catch {
-    return []
-  }
-}
-
-function persist(list) {
-  try {
-    // keep under quota; store compact entries
-    localStorage.setItem(KEY, JSON.stringify(list.slice(0, LIMIT)))
-  } catch {
-    // quota exceeded: drop oldest until it fits
-    let copy = list.slice(0, LIMIT)
-    while (copy.length > 0) {
-      try {
-        localStorage.setItem(KEY, JSON.stringify(copy))
-        break
-      } catch {
-        copy = copy.slice(1)
-      }
-    }
-  }
+  return loadAllCodes()
 }
 
 export function saveHistoryEntry(entry) {
-  const list = loadHistory()
-  list.unshift({
-    id: entry.id || String(Date.now()),
-    type: entry.type,
-    title: entry.title || '',
-    payload: entry.payload,
-    fields: entry.fields || null,
-    preview: entry.preview || null,
-    createdAt: entry.createdAt || new Date().toISOString()
-  })
-  persist(list)
-  return list
+  return saveCode(entry)
 }
 
 export function removeHistoryEntry(id) {
-  const list = loadHistory().filter((it) => it.id !== id)
-  persist(list)
-  return list
+  return deleteCode(id)
 }
 
 export function clearHistory() {
-  persist([])
-  return []
+  return clearCodes()
 }
+
+export function markDownloaded(payload) {
+  return incrementDownload(payload)
+}
+
+export { updateCode, duplicateCode }
