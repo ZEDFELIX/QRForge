@@ -4,13 +4,14 @@ import { QrCode, ShieldCheck, Lock, Smartphone, Sparkles, Download, Wand2 } from
 export default function About() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-      <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-        About QRForge
+      <p className="eyebrow">About QRForge</p>
+      <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        Free software, forged with pride.
       </h1>
       <p className="mt-4 text-lg text-slate-600">
         QRForge is a free, fast and privacy-friendly QR code generator. Create QR codes
-        for URLs, Wi-Fi, text, email, phone numbers and contacts — then download, print
-        or share them as sharp PNG, SVG or JPG files.
+        for URLs, Wi-Fi, text, email, phone numbers, WhatsApp and payments — then download,
+        print or share them as sharp PNG, SVG or JPG files.
       </p>
 
       <div className="mt-10 space-y-4">
@@ -33,7 +34,7 @@ export default function About() {
         </FeatureRow>
       </div>
 
-      <div className="mt-12 rounded-2xl border border-indigo-100 bg-indigo-50 p-6">
+      <div className="mt-12 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-violet-50 p-6">
         <div className="flex items-start gap-3">
           <QrCode className="mt-0.5 shrink-0 text-indigo-600" size={22} aria-hidden="true" />
           <div>
@@ -50,7 +51,7 @@ export default function About() {
       <div className="mt-10 text-center">
         <Link
           to="/"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white hover:bg-indigo-700"
+          className="btn-primary bg-none px-6 py-3 text-base"
         >
           <QrCode size={18} aria-hidden="true" /> Start generating
         </Link>

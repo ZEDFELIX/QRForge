@@ -2,10 +2,9 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   QrCode, Radio, FileSpreadsheet, Sparkles, Grid2X2, BarChart3, Layers,
-  ArrowRight, Plus, FolderOpen, Clock, Palette
+  ArrowRight, Plus, FolderOpen, Clock, Palette, Wand2
 } from 'lucide-react'
-import { loadAllCodes } from '../utils/folders.js'
-import { loadFolders } from '../utils/folders.js'
+import { loadAllCodes, loadFolders } from '../utils/folders.js'
 import { formatNumber } from '../utils/analytics.js'
 
 export default function Dashboard() {
@@ -15,10 +14,10 @@ export default function Dashboard() {
   const recent = codes.slice(0, 5)
 
   const quickActions = [
-    { to: '/app/create', label: 'Create QR', desc: 'Static QR code', icon: QrCode, color: 'bg-indigo-600' },
-    { to: '/app/dynamic', label: 'Dynamic QR', desc: 'Editable destination', icon: Radio, color: 'bg-violet-600' },
-    { to: '/app/bulk', label: 'Bulk QR', desc: 'CSV → many codes', icon: FileSpreadsheet, color: 'bg-emerald-600' },
-    { to: '/app/landing', label: 'Landing Page', desc: 'Social · menu · card', icon: Sparkles, color: 'bg-amber-500' }
+    { to: '/app/create', label: 'Create QR', desc: 'Static code', icon: QrCode, tint: 'from-indigo-500 to-violet-500' },
+    { to: '/app/dynamic', label: 'Dynamic QR', desc: 'Editable destination', icon: Radio, tint: 'from-fuchsia-500 to-pink-500' },
+    { to: '/app/bulk', label: 'Bulk QR', desc: 'CSV → many codes', icon: FileSpreadsheet, tint: 'from-emerald-500 to-teal-400' },
+    { to: '/app/landing', label: 'Landing Page', desc: 'Menu · card · social', icon: Sparkles, tint: 'from-amber-500 to-orange-400' }
   ]
 
   const stats = [
@@ -30,37 +29,46 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Hero / welcome */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-700 p-8 text-white sm:p-10">
-        <div className="relative z-10 max-w-2xl">
-          <h1 className="text-2xl font-bold sm:text-3xl">Welcome to QRForge</h1>
-          <p className="mt-2 text-indigo-100">
-            Powerful QR tools without the unnecessary paywalls. Generate unlimited static QR codes free forever — no signup, no watermark.
+      {/* Welcome */}
+      <section className="relative overflow-hidden rounded-[26px] bg-ink-950 p-8 shadow-elevated sm:p-10">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-indigo-600/40 blur-3xl" />
+        <div aria-hidden="true" className="pointer-events-none absolute bottom-0 right-40 h-56 w-56 rounded-full bg-fuchsia-600/25 blur-3xl" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_120%_at_100%_0%,rgb(168_85_247/0.18),transparent)]" />
+
+        <div className="relative max-w-2xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-300">The Studio</p>
+          <h1 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            Let's forge something great.
+          </h1>
+          <p className="mt-2 text-indigo-100/80">
+            Unlimited static QR codes, design tools and pro workflows — free forever,
+            no signup, no watermark.
           </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link to="/app/create" className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-indigo-700 shadow hover:bg-indigo-50">
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link to="/app/create" className="btn-primary bg-none px-5 py-2.5 text-sm">
               <Plus size={16} /> Create QR Code
             </Link>
-            <Link to="/" className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/25">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/15"
+            >
               <QrCode size={16} /> Free Generator
             </Link>
           </div>
         </div>
-        <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-16 right-24 h-40 w-40 rounded-full bg-white/10 blur-xl" />
       </section>
 
       {/* Quick actions */}
       <section aria-label="Quick actions">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Quick actions</h2>
+        <h2 className="mb-3 font-display text-base font-semibold text-slate-900">Quick actions</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {quickActions.map((a) => (
             <Link
               key={a.to}
               to={a.to}
-              className="group rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md"
+              className="card card-hover group p-4"
             >
-              <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${a.color} text-white shadow-sm`}>
+              <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr text-white shadow-soft ${a.tint}`}>
                 <a.icon size={20} />
               </span>
               <p className="mt-3 text-sm font-semibold text-slate-900">{a.label}</p>
@@ -72,32 +80,37 @@ export default function Dashboard() {
 
       {/* Stats */}
       <section aria-label="Statistics">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Statistics</h2>
+        <h2 className="mb-3 font-display text-base font-semibold text-slate-900">Statistics</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {stats.map((s) => (
-            <Link key={s.label} to={s.to} className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-indigo-300">
+            <Link key={s.label} to={s.to} className="card card-hover group p-4">
               <div className="flex items-center justify-between">
-                <s.icon size={18} className="text-indigo-500" />
-                <ArrowRight size={14} className="text-slate-300" />
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
+                  <s.icon size={17} />
+                </span>
+                <ArrowRight size={14} className="text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-indigo-500" />
               </div>
-              <p className="mt-3 text-2xl font-bold text-slate-900">{s.value}</p>
-              <p className="text-xs text-slate-500">{s.label}</p>
+              <p className="mt-3 flex items-baseline gap-2 font-display text-2xl font-bold text-slate-900">
+                {s.value}
+                {s.note && <span className="text-[10px] font-medium text-slate-400">{s.note}</span>}
+              </p>
+              <p className="text-xs font-medium text-slate-500">{s.label}</p>
             </Link>
           ))}
         </div>
-        <p className="mt-2 text-xs text-slate-400">
-          Scan statistics are available once Dynamic QR is connected to a backend database.
+        <p className="mt-2.5 text-xs text-slate-400">
+          Scan statistics go live once Dynamic QR is connected to a backend database.
         </p>
       </section>
 
-      {/* Recent + campaigns awareness */}
+      {/* Recent + campaigns */}
       <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="card p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900">
+            <h2 className="flex items-center gap-2 font-display text-base font-semibold text-slate-900">
               <Clock size={16} className="text-indigo-500" /> Recent QR Codes
             </h2>
-            <Link to="/app/mycodes" className="text-sm font-medium text-indigo-600 hover:underline">View all</Link>
+            <Link to="/app/mycodes" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700">View all</Link>
           </div>
           {recent.length === 0 ? (
             <p className="py-8 text-center text-sm text-slate-400">No QR codes yet — create your first one.</p>
@@ -108,46 +121,61 @@ export default function Dashboard() {
                   {c.preview ? (
                     <img src={c.preview} alt="" className="h-10 w-10 rounded-lg border border-slate-100 object-contain" />
                   ) : (
-                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-400"><QrCode size={18} /></span>
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-500"><QrCode size={18} /></span>
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-800">{c.title || c.type}</p>
                     <p className="text-xs text-slate-400">{c.type} · {new Date(c.createdAt || Date.now()).toLocaleDateString()}</p>
                   </div>
+                  {c.isDynamic && (
+                    <span className="chip border border-indigo-200 bg-indigo-50 text-[10px] text-indigo-600">Dynamic</span>
+                  )}
                 </li>
               ))}
             </ul>
           )}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-slate-900">
+        <div className="card relative overflow-hidden p-5">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-indigo-100/70 blur-2xl" />
+          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold text-slate-900">
             <Layers size={16} className="text-indigo-500" /> Campaigns
           </h2>
-          <p className="text-sm text-slate-500">
-            Combine multiple QRs into a marketing campaign and watch combined scan statistics.
+          <p className="text-sm leading-relaxed text-slate-500">
+            Combine multiple QR codes into one marketing campaign and watch combined scan statistics.
           </p>
-          <Link to="/app/campaigns" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100">
+          <Link to="/app/campaigns" className="btn-secondary mt-4 text-sm">
             Open Campaigns <ArrowRight size={14} />
           </Link>
         </div>
       </section>
 
+      {/* Shortcuts */}
       <section className="grid gap-3 sm:grid-cols-3">
         {[
           { to: '/app/templates', icon: Grid2X2, title: 'Templates', desc: '27 ready-made templates' },
           { to: '/app/landing', icon: Sparkles, title: 'Landing Pages', desc: 'Menus, cards & more' },
           { to: '/app/brand', icon: Palette, title: 'Brand Kit', desc: 'Save your brand look' }
         ].map((c) => (
-          <Link key={c.to} to={c.to} className="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-indigo-300">
-            <c.icon size={20} className="text-indigo-500" />
-            <div>
-              <p className="text-sm font-semibold text-slate-900">{c.title}</p>
+          <Link key={c.to} to={c.to} className="card card-hover group flex items-center gap-3 p-4">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
+              <c.icon size={19} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+                {c.title}
+                <ArrowRight size={13} className="text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-indigo-500" />
+              </p>
               <p className="text-xs text-slate-500">{c.desc}</p>
             </div>
           </Link>
         ))}
       </section>
+
+      <div className="flex items-center gap-2 rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/50 px-4 py-3 text-xs text-slate-500">
+        <Wand2 size={14} className="shrink-0 text-indigo-500" />
+        Tip: save colors + logo once in <Link to="/app/brand" className="font-semibold text-indigo-600 hover:underline">Brand Kit</Link> and apply them to any QR with one tap.
+      </div>
     </div>
   )
 }

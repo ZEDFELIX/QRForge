@@ -4,7 +4,8 @@ import { Lock, HardDrive, ImageIcon, UserX, Database } from 'lucide-react'
 export default function Privacy() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-      <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Privacy Policy</h1>
+      <p className="eyebrow">Privacy</p>
+      <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Privacy Policy</h1>
       <p className="mt-3 text-slate-500">Last updated: 2026 — QRForge is designed so your data stays yours.</p>
 
       <div className="mt-8 space-y-5 text-sm leading-relaxed text-slate-600">

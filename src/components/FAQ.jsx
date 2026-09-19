@@ -37,27 +37,36 @@ export default function FAQ() {
 
   return (
     <section id="faq" aria-labelledby="faq-title" className="scroll-mt-24">
-      <h2 id="faq-title" className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-        Frequently asked questions
-      </h2>
-      <p className="mt-2 text-slate-500">Everything you might want to know about QRForge.</p>
-      <div className="mt-8 space-y-3">
+      <div className="text-center">
+        <p className="eyebrow">Good to know</p>
+        <h2 id="faq-title" className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          Frequently asked questions
+        </h2>
+        <p className="mt-2 text-slate-500">Everything you might want to know about QRForge.</p>
+      </div>
+      <div className="mt-10 space-y-3">
         {FAQS.map((f, i) => {
           const isOpen = open === i
           return (
-            <div key={f.q} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div key={f.q} className={`card overflow-hidden transition-colors ${isOpen ? 'border-indigo-200' : ''}`}>
               <button
                 className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
                 onClick={() => setOpen(isOpen ? -1 : i)}
                 aria-expanded={isOpen}
                 aria-controls={`faq-${i}`}
               >
-                <span className="font-medium text-slate-900">{f.q}</span>
-                <ChevronDown
-                  size={18}
-                  aria-hidden="true"
-                  className={`shrink-0 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                />
+                <span className="font-semibold text-slate-900">{f.q}</span>
+                <span
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition ${
+                    isOpen ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-400'
+                  }`}
+                >
+                  <ChevronDown
+                    size={16}
+                    aria-hidden="true"
+                    className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                  />
+                </span>
               </button>
               {isOpen && (
                 <div id={`faq-${i}`} className="px-5 pb-5 text-sm leading-relaxed text-slate-600">

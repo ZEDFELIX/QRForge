@@ -3,18 +3,140 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Sora", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Brand palette — premium violet-ink. Overrides Tailwind's default indigo so the
+     entire app inherits the new identity. */
+  --color-indigo-50: #eef0ff;
+  --color-indigo-100: #e1e4ff;
+  --color-indigo-200: #c8ccff;
+  --color-indigo-300: #a6acff;
+  --color-indigo-400: #8489ff;
+  --color-indigo-500: #635bff;
+  --color-indigo-600: #5248f0;
+  --color-indigo-700: #4438c9;
+  --color-indigo-800: #382f9f;
+  --color-indigo-900: #2e287a;
+  --color-indigo-950: #1b1846;
+
+  /* Deep ink surfaces for premium dark chrome (footer, sidebar, hero panels). */
+  --color-ink-950: #0b0d1c;
+  --color-ink-900: #11132a;
+  --color-ink-800: #1a1d3d;
+
+  /* Premium layered shadows. */
+  --shadow-soft: 0 1px 2px rgb(11 13 28 / 0.04), 0 8px 24px -10px rgb(11 13 28 / 0.10);
+  --shadow-elevated: 0 2px 4px rgb(11 13 28 / 0.05), 0 20px 48px -16px rgb(11 13 28 / 0.18);
+  --shadow-glow: 0 8px 28px -6px rgb(99 91 255 / 0.5);
+
+  /* Motion. */
+  --animate-rise: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-float-slow: float 11s ease-in-out infinite;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Premium typography defaults — headings use the display face. */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
 }
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+    @apply rounded-2xl border border-slate-200/80 bg-white;
+    box-shadow: var(--shadow-soft);
+    transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
   }
+  .card-hover:hover {
+    transform: translateY(-3px);
+    border-color: var(--color-indigo-200);
+    box-shadow: var(--shadow-elevated);
+  }
+
   .input {
-    @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30;
+    @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition placeholder:text-slate-400;
+    box-shadow: 0 1px 2px rgb(11 13 28 / 0.04);
   }
+  .input:focus {
+    outline: none;
+    border-color: var(--color-indigo-500);
+    box-shadow: 0 0 0 3px rgb(99 91 255 / 0.18);
+  }
+  .input[readonly], .input:disabled, .input[disabled] {
+    @apply bg-slate-100 text-slate-500;
+  }
+
   .label {
     @apply mb-1.5 block text-sm font-medium text-slate-700;
   }
+
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-500;
+  }
+
+  /* Buttons — the app referenced this class everywhere before it had styles. */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition;
+    background: linear-gradient(135deg, #635bff 0%, #8b5cf6 55%, #a855f7 100%);
+    box-shadow: 0 8px 24px -8px rgb(99 91 255 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.18);
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 32px -10px rgb(99 91 255 / 0.65), inset 0 1px 0 rgb(255 255 255 / 0.18);
+  }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .btn-primary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(99 91 255 / 0.35);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition;
+    box-shadow: 0 1px 2px rgb(11 13 28 / 0.04);
+  }
+  .btn-secondary:hover {
+    @apply border-slate-300 bg-slate-50 text-slate-900;
+  }
+  .btn-secondary:disabled { @apply cursor-not-allowed opacity-45; }
+  .btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(99 91 255 / 0.22); }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium;
+  }
+}
+
+/* Signature gradient text + surfaces. */
+.text-gradient {
+  background-image: linear-gradient(115deg, #635bff 10%, #a855f7 55%, #d946ef 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-ring {
+  background-image: linear-gradient(135deg, #635bff 0%, #a855f7 50%, #e879f9 100%);
+}
+
+.glass {
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 html {
@@ -31,12 +153,12 @@ body {
 }
 
 ::selection {
-  background-color: #c7d2fe;
-  color: #1e1b4b;
+  background-color: #d6d8ff;
+  color: #1b1846;
 }
 
 :focus-visible {
-  outline: 2px solid #6366f1;
+  outline: 2px solid #635bff;
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -58,7 +180,7 @@ body {
   top: 0;
   z-index: 100;
   padding: 0.75rem 1.25rem;
-  background: #6366f1;
+  background: #635bff;
   color: #fff;
   border-radius: 0 0 0.5rem 0;
   font-weight: 600;
@@ -73,13 +195,13 @@ body {
   height: 12px;
 }
 ::-webkit-scrollbar-track {
-  background: #f8fafc;
+  background: #f7f8fd;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
+  background-color: #cbd0f0;
   border-radius: 9999px;
-  border: 3px solid #f8fafc;
+  border: 3px solid #f7f8fd;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
+  background-color: #a5abdd;
 }
