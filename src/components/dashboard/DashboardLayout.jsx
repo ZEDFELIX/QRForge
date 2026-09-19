@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, QrCode, Grid2X2, Radio, BarChart3, Layers, FileSpreadsheet,
   Palette, Settings, HelpCircle, Menu, X, Plus, Sparkles, ArrowUpRight
 } from 'lucide-react'
 import LogoMark from '../LogoMark.jsx'
+import { syncFromCloud } from '../../utils/cloudStore.js'
 
 const NAV = [
   {
@@ -50,6 +51,15 @@ function titleFor(pathname) {
 export default function DashboardLayout({ children }) {
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
+
+  // Merge QR codes saved in Supabase Storage into the local cache on load.
+  useEffect(() => {
+    let alive = true
+    syncFromCloud().then((list) => {
+      if (alive && list) window.dispatchEvent(new Event('qrforge:codes:changed'))
+    })
+    return () => { alive = false }
+  }, [])
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] bg-slate-50">

@@ -174,3 +174,26 @@ create policy "scans_select_own" on qr_scans for select using (auth.uid() = (sel
 --   * enable an anon SELECT on qr_destinations joined to qr_codes where status='active',
 --     and INSERT on qr_scans (recommended when no user auth), or
 --   * set the redirect function to use the service role key (advanced).
+
+--------------------------------------------------------------------------
+-- QR code backup (Storage)
+-- The app stores every saved QR code record as a JSON file in this bucket
+-- (path: qrs/<device>/<code>.json) so codes persist until the user deletes
+-- them — across browsers and devices. The anon key (which the client uses)
+-- needs create/read/update/delete access scoped to this bucket.
+--------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('qrforge-codes', 'qrforge-codes', false)
+on conflict (id) do nothing;
+
+create policy "qrforge_codes_read" on storage.objects
+  for select using (bucket_id = 'qrforge-codes');
+create policy "qrforge_codes_insert" on storage.objects
+  for insert with check (bucket_id = 'qrforge-codes');
+create policy "qrforge_codes_update" on storage.objects
+  for update using (bucket_id = 'qrforge-codes');
+create policy "qrforge_codes_delete" on storage.objects
+  for delete using (bucket_id = 'qrforge-codes');
+
+-- Optional: use a different bucket name by setting VITE_SUPABASE_BUCKET in
+-- Vercel (or "Storage bucket name" in QRForge → Settings).

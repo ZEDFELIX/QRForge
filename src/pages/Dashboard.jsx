@@ -1,17 +1,34 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   QrCode, Radio, FileSpreadsheet, Sparkles, Grid2X2, BarChart3, Layers,
-  ArrowRight, Plus, FolderOpen, Clock, Palette, Wand2
+  ArrowRight, Plus, FolderOpen, Clock, Palette, Wand2, Cloud
 } from 'lucide-react'
 import { loadAllCodes, loadFolders } from '../utils/folders.js'
 import { formatNumber } from '../utils/analytics.js'
+import { cloudStatus } from '../utils/cloudStore.js'
 
 export default function Dashboard() {
-  const codes = useMemo(() => loadAllCodes(), [])
-  const folders = useMemo(() => loadFolders(), [])
+  const [tick, setTick] = useState(0)
+  const [cloud, setCloud] = useState(null)
+  const codes = useMemo(() => loadAllCodes(), [tick])
+  const folders = useMemo(() => loadFolders(), [tick])
   const dynamic = codes.filter(c => c.isDynamic)
   const recent = codes.slice(0, 5)
+
+  useEffect(() => {
+    let alive = true
+    cloudStatus().then((s) => { if (alive) setCloud(s) })
+    const onChange = () => {
+      cloudStatus().then((s) => setCloud(s))
+      setTick((t) => t + 1)
+    }
+    window.addEventListener('qrforge:codes:changed', onChange)
+    return () => {
+      alive = false
+      window.removeEventListener('qrforge:codes:changed', onChange)
+    }
+  }, [])
 
   const quickActions = [
     { to: '/app/create', label: 'Create QR', desc: 'Static code', icon: QrCode, tint: 'from-indigo-500 to-violet-500' },
@@ -98,8 +115,17 @@ export default function Dashboard() {
             </Link>
           ))}
         </div>
-        <p className="mt-2.5 text-xs text-slate-400">
-          Scan statistics go live once Dynamic QR is connected to a backend database.
+        <p className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
+          {cloud && cloud.ok ? (
+            <span className="inline-flex items-center gap-1.5 text-emerald-600">
+              <Cloud size={13} /> QR codes backed up to Supabase Storage
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5">
+              <Cloud size={13} /> Saving to this device
+            </span>
+          )}
+          <span>Scan statistics go live once Dynamic QR is connected to a backend database.</span>
         </p>
       </section>
 

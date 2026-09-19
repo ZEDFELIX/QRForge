@@ -1,4 +1,6 @@
 // Folders: organize QR codes into folders + search
+import { pushCloudCode, deleteCloudCode, clearCloudCodes } from './cloudStore.js'
+
 const FOLDERS_KEY = 'qrforge:folders:v1'
 
 export function loadFolders() {
@@ -67,22 +69,36 @@ export function loadAllCodes() {
 
 export function saveCode(entry) {
   const all = loadAllCodes()
+  let saved
   const existing = all.findIndex(e => e.id === entry.id)
-  if (existing >= 0) all[existing] = { ...all[existing], ...entry }
-  else all.unshift({ id: `qr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...entry, createdAt: new Date().toISOString() })
+  if (existing >= 0) {
+    saved = { ...all[existing], ...entry }
+    all[existing] = saved
+  } else {
+    saved = { id: `qr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...entry, createdAt: new Date().toISOString() }
+    all.unshift(saved)
+  }
   persistCodes(all)
+  void pushCloudCode(saved)
   return all
 }
 
 export function updateCode(id, updates) {
-  const all = loadAllCodes().map(e => e.id === id ? { ...e, ...updates, updatedAt: new Date().toISOString() } : e)
+  let updated = null
+  const all = loadAllCodes().map(e => {
+    if (e.id !== id) return e
+    updated = { ...e, ...updates, updatedAt: new Date().toISOString() }
+    return updated
+  })
   persistCodes(all)
+  if (updated) void pushCloudCode(updated)
   return all
 }
 
 export function deleteCode(id) {
   const all = loadAllCodes().filter(e => e.id !== id)
   persistCodes(all)
+  void deleteCloudCode(id)
   return all
 }
 
@@ -93,6 +109,7 @@ export function duplicateCode(id, newName) {
   const copy = { ...original, id: `qr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, title: newName || `${original.title} (copy)`, createdAt: new Date().toISOString(), locked: false }
   all.unshift(copy)
   persistCodes(all)
+  void pushCloudCode(copy)
   return all
 }
 
@@ -106,6 +123,7 @@ export function incrementDownload(payload) {
   const next = all[target].downloads || 0
   all[target] = { ...all[target], downloads: next + 1 }
   persistCodes(all)
+  void pushCloudCode(all[target])
   return next + 1
 }
 
@@ -146,6 +164,7 @@ function migrateFromHistory() {
 export function clearCodes() {
   try { localStorage.removeItem(QR_KEY) } catch { /* ignore */ }
   try { localStorage.removeItem('qrforge:history:v1') } catch { /* ignore */ }
+  void clearCloudCodes()
   return []
 }
 

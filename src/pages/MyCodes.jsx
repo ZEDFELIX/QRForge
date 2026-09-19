@@ -1,12 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Search, Folder, FolderPlus, RefreshCw, Trash2, Copy, Pencil, Lock, LockOpen,
-  ArrowRight, X, Check, Grid2X2, QrCode
+  ArrowRight, X, Check, Grid2X2, QrCode, Cloud, CloudOff
 } from 'lucide-react'
 import {
   loadAllCodes, deleteCode, duplicateCode, updateCode,
   loadFolders, createFolder, renameFolder, deleteFolder, loadAssignments, assignQrToFolder
 } from '../utils/folders.js'
+import { cloudStatus, refreshCloudStatus, syncFromCloud } from '../utils/cloudStore.js'
 
 export default function MyCodes() {
   const [codes, setCodes] = useState(() => loadAllCodes())
@@ -19,9 +20,37 @@ export default function MyCodes() {
   const [newFolderName, setNewFolderName] = useState('')
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [moving, setMoving] = useState(null) // code id being moved
+  const [cloud, setCloud] = useState(null) // { enabled, ok, message }
+  const [syncing, setSyncing] = useState(false)
 
   const refresh = (list = loadAllCodes(), f = loadFolders(), a = loadAssignments()) => {
     setCodes(list); setFolders(f); setAssignments(a)
+  }
+
+  useEffect(() => {
+    let alive = true
+    cloudStatus().then((s) => { if (alive) setCloud(s) })
+    syncFromCloud().then((list) => { if (alive && list) refresh(list) })
+    const onChanged = () => { if (alive) refresh() }
+    window.addEventListener('qrforge:codes:changed', onChanged)
+    return () => {
+      alive = false
+      window.removeEventListener('qrforge:codes:changed', onChanged)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const doSync = async () => {
+    if (syncing) return
+    setSyncing(true)
+    try {
+      const status = await refreshCloudStatus()
+      const list = await syncFromCloud()
+      if (status) setCloud(status)
+      if (list) refresh(list)
+    } finally {
+      setSyncing(false)
+    }
   }
 
   const filtered = useMemo(() => {
@@ -54,9 +83,46 @@ export default function MyCodes() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-xl font-bold text-slate-900">My QR Codes</h1>
-        <p className="text-sm text-slate-500">Everything is stored on this device only.</p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">My QR Codes</h1>
+          <p className="text-sm text-slate-500">
+            {cloud
+              ? cloud.ok
+                ? 'Backed up to Supabase Storage — deletes sync everywhere.'
+                : 'Codes are kept on this device while Supabase storage is unavailable.'
+              : 'Codes are kept on this device.'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${
+              cloud
+                ? cloud.ok
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-slate-200 bg-slate-50 text-slate-500'
+                : 'border-slate-200 bg-slate-50 text-slate-500'
+            }`}
+          >
+            {cloud && cloud.ok ? (
+              <>
+                <Cloud size={13} /> Cloud backup on
+              </>
+            ) : (
+              <>
+                <CloudOff size={13} /> Local only
+              </>
+            )}
+          </span>
+          <button
+            onClick={doSync}
+            disabled={syncing}
+            className="btn-secondary px-3 py-1.5 text-xs"
+            title="Pull changes from cloud backup"
+          >
+            <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} /> Sync
+          </button>
+        </div>
       </header>
 
       {/* Search */}
