@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import Header from './components/Header.jsx'
 import Footer from './components/Footer.jsx'
@@ -19,22 +19,40 @@ const BrandKitPage = lazy(() => import('./pages/BrandKitPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 const HelpPage = lazy(() => import('./pages/HelpPage.jsx'))
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'))
+const TextLandingPage = lazy(() => import('./pages/TextLandingPage.jsx'))
 
 function Lazy({ children }) {
   return <Suspense fallback={<div className="flex justify-center py-24 text-sm text-slate-400">Loading…</div>}>{children}</Suspense>
+}
+
+// Public pages wrapped in the site header + footer.
+function SiteShell() {
+  return (
+    <>
+      <Header />
+      <div className="flex-1">
+        <Outlet />
+      </div>
+      <Footer />
+    </>
+  )
 }
 
 export default function App() {
   return (
     <BrowserRouter>
       <div className="flex min-h-screen flex-col bg-white text-slate-800">
-        <Header />
         <div className="flex-1">
           <Routes>
             {/* Public / static generator */}
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/privacy" element={<Privacy />} />
+            <Route element={<SiteShell />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/privacy" element={<Privacy />} />
+            </Route>
+
+            {/* Scanned text landing pages — full screen, no app chrome */}
+            <Route path="/p/:data" element={<Lazy><TextLandingPage /></Lazy>} />
 
             {/* Dashboard */}
             <Route path="/app" element={<DashboardLayout><Lazy><Dashboard /></Lazy></DashboardLayout>} />
@@ -53,7 +71,6 @@ export default function App() {
             <Route path="*" element={<Home />} />
           </Routes>
         </div>
-        <Footer />
       </div>
     </BrowserRouter>
   )

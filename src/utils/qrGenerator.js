@@ -1,5 +1,6 @@
 import QRCode from 'qrcode'
 import { normalizeHex } from './validators.js'
+import { textPageUrl } from './textPage.js'
 
 const EC_DEFAULT = 'M'
 const LOGO_EC = 'H'
@@ -41,7 +42,7 @@ export function buildPayload(type, fields) {
     case 'url':
       return fields.url.trim()
     case 'text':
-      return fields.text
+      return fields.textMode === 'page' ? textPageUrl(fields.text, fields) : fields.text
     case 'phone': {
       const digits = fields.phone.replace(/[^\d+]/g, '')
       return `tel:${digits}`

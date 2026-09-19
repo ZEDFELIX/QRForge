@@ -23,6 +23,10 @@ const FAQS = [
     a: 'Yes. Upload a PNG, JPG or WebP logo and it appears in the center of the QR. QRForge automatically raises error correction for reliable scanning.'
   },
   {
+    q: 'Can scanned text show as a nice page instead of raw text?',
+    a: 'Yes. Choose the Text type, then switch “How it appears when scanned” to Custom landing page. The styled page is built directly into the QR code — title, accent colour, background and display type are embedded, so any phone camera opens it without needing hosting or accounts.'
+  },
+  {
     q: 'Can I print my QR code?',
     a: 'Yes. Use the Print button to open a clean, print-ready layout with your QR scaled to full scannable sharpness.'
   },

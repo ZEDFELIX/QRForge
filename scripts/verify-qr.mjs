@@ -9,6 +9,7 @@ import jsQR from 'jsqr'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { textPageUrl } from '../src/utils/textPage.js'
 
 const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', '.verify')
 
@@ -30,6 +31,11 @@ const cases = [
   { label: 'vCard', ec: 'H', text: 'BEGIN:VCARD\nVERSION:3.0\nFN:John Doe\nORG:Acme\nTEL:+254711436169\nEMAIL:john@example.com\nEND:VCARD' },
   { label: 'Geo', ec: 'Q', text: 'https://maps.google.com/maps?q=-1.2921,36.8219' },
   { label: 'Image URL', ec: 'M', text: 'https://example.com/photo.jpg' },
+  {
+    label: 'Text page URL',
+    ec: 'M',
+    text: textPageUrl('Grand Opening!\n\nJoin us this Saturday, 10am – 5pm, for free coffee and a prize every hour.', { textPageTitle: 'Grand Opening', textPageAccent: '#635bff', textPageTheme: 'dark', textPageBig: true })
+  },
   { label: 'Long content', ec: 'H', text: 'https://example.com/this-is-a-very-long-url-path-that-pushes-the-qr-to-a-higher-version-with-more-modules-so-we-verify-mid-size-codes-work-too?query=1234567890&ref=qrforge' }
 ]
 

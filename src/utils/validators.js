@@ -1,6 +1,8 @@
 // Validation + normalization helpers. All rules are quiet-zone friendly and
 // return either an error string or null (valid). Never throws.
 
+import { textPageUrl, TEXT_PAGE_HARD } from './textPage.js'
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 export function isValidHex(input) {
@@ -46,8 +48,16 @@ export function validateType(type, fields) {
       if (!isHttpUrl(u)) return 'Please enter a valid URL (e.g., https://example.com).'
       return null
     }
-    case 'text':
-      return requireNonEmpty(fields?.text, 'Please enter some text or content.')
+    case 'text': {
+      const missing = requireNonEmpty(fields?.text, 'Please enter some text or content.')
+      if (missing) return missing
+      if (fields?.textMode === 'page') {
+        const len = textPageUrl(fields.text, fields).length
+        if (len > TEXT_PAGE_HARD)
+          return `That text makes a ${len}-character QR code, which is too long to scan reliably. Keep the total under ${TEXT_PAGE_HARD} characters, or switch to plain text.`
+      }
+      return null
+    }
     case 'phone': {
       const digits = (fields?.phone || '').replace(/[^\d+]/g, '')
       if (!digits) return 'Please enter a phone number.'

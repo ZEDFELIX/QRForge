@@ -1,7 +1,8 @@
-import { Search, Instagram, Mail, MessageCircle, Globe, Wifi, User, MapPin, CreditCard, Image as ImageIcon } from 'lucide-react'
+import { Search, Instagram, Mail, MessageCircle, Globe, Wifi, User, MapPin, CreditCard, Image as ImageIcon, Sparkles } from 'lucide-react'
 
 const EXAMPLES = [
   { id: 'google', label: 'Google', icon: Search, type: 'url', fields: { url: 'https://www.google.com' } },
+  { id: 'textpage', label: 'Text page', icon: Sparkles, type: 'text', fields: { textMode: 'page', text: 'Grand Opening!\n\nJoin us this Saturday, 10am – 5pm, for coffee, treats and a prize every hour.\n\nSayori & Co. — 12nd Mango Street', textPageTitle: 'Grand Opening', textPageAccent: '#635bff', textPageTheme: 'gradient', textPageBig: true } },
   { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, type: 'whatsapp', fields: { whatsappNumber: '254700000000', whatsappMessage: 'Hello from QRForge!' } },
   { id: 'mpesa', label: 'M-Pesa', icon: CreditCard, type: 'payment', fields: { payBusinessName: 'Acme Coffee', payTillNumber: '123456', payAccountNo: 'Order #1', payInstructions: 'Scan to pay via M-Pesa' } },
   { id: 'photo', label: 'Image', icon: ImageIcon, type: 'image', fields: { imageMode: 'url', imageUrl: 'https://example.com/photo.jpg' } },

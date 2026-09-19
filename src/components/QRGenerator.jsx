@@ -3,8 +3,10 @@ import { Upload } from 'lucide-react'
 import { QR_TYPES, buildPayload, drawQrAsync, qrToSvg, effectiveEC } from '../utils/qrGenerator.js'
 import { validateType } from '../utils/validators.js'
 import { processImageForQr, base64Bytes } from '../utils/imageQr.js'
+import { textPageUrl, textPageConfig, TEXT_PAGE_WARN, TEXT_PAGE_HARD } from '../utils/textPage.js'
 import { markDownloaded } from '../utils/storage.js'
 import { loadBrandKit } from '../utils/brand.js'
+import TextPageView from './TextPageView.jsx'
 import QRTypeSelector from './QRTypeSelector.jsx'
 import QRCustomization from './QRCustomization.jsx'
 import QRPreview from './QRPreview.jsx'
@@ -44,7 +46,12 @@ const EMPTY_FIELDS = {
   payInstructions: '',
   imageMode: 'embed',
   imageData: '',
-  imageUrl: ''
+  imageUrl: '',
+  textMode: 'plain',
+  textPageTitle: '',
+  textPageAccent: '#635bff',
+  textPageTheme: 'light',
+  textPageBig: false
 }
 
 export default function QRGenerator({ initialType, initialFields, initialFg, initialBg, initialRounded }) {
@@ -378,6 +385,7 @@ function ContentFields({ type, fields, onChange }) {
           )
         })}
       </div>
+      {type === 'text' && fields.textMode === 'page' && <TextPagePanel fields={fields} />}
       {type === 'image' && fields.imageMode !== 'url' && (
         <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs leading-relaxed text-amber-800">
           How embedded images work: for a QR to display an image, it must squeeze the whole
@@ -390,12 +398,73 @@ function ContentFields({ type, fields, onChange }) {
   )
 }
 
+function TextPagePanel({ fields }) {
+  const cfg = textPageConfig(fields?.text || '', fields)
+  const len = textPageUrl(fields?.text || '', fields).length
+  const tooLong = len > TEXT_PAGE_HARD
+  const gettingLong = !tooLong && len > TEXT_PAGE_WARN
+
+  return (
+    <div className="mt-4 space-y-3">
+      <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-2.5 text-xs leading-relaxed text-indigo-800">
+        The landing page is built into the QR code itself, so any phone camera opens this styled
+        page — no hosting or backend needed. Keep the text concise enough for reliable scanning.
+      </div>
+
+      <p className={`flex items-center gap-2 text-xs font-semibold ${tooLong ? 'text-red-600' : gettingLong ? 'text-amber-600' : 'text-slate-500'}`}>
+        <span className="rounded-full bg-slate-100 px-2 py-0.5">{len}</span> characters in the QR
+        {gettingLong && ' — getting long, shorten it for fast scans'}
+        {tooLong && ` — too long to scan reliably (max ${TEXT_PAGE_HARD})`}
+      </p>
+
+      <div>
+        <p className="mb-1.5 text-xs font-medium text-slate-500">On scan, they’ll see:</p>
+        <TextPageView title={cfg.title} text={cfg.text} accent={cfg.accent} theme={cfg.theme} big={cfg.big} />
+      </div>
+    </div>
+  )
+}
+
 const FIELD_SCHEMAS = {
   url: [
     { key: 'url', label: 'Website URL', required: true, placeholder: 'https://example.com', inputType: 'url' }
   ],
   text: [
-    { key: 'text', label: 'Text', required: true, placeholder: 'Enter any text…', type: 'textarea', rows: 4 }
+    {
+      key: 'textMode',
+      label: 'How it appears when scanned',
+      type: 'select',
+      options: [
+        { value: 'plain', label: 'Plain text (phone shows the raw text)' },
+        { value: 'page', label: 'Custom landing page (styled, branded page)' }
+      ]
+    },
+    { key: 'text', label: 'Text content', required: true, placeholder: 'Enter any text…', type: 'textarea', rows: 4 },
+    {
+      key: 'textPageTitle',
+      label: 'Page title (optional)',
+      placeholder: 'Shown as the big heading — defaults to the first line',
+      showWhen: (f) => f.textMode === 'page'
+    },
+    {
+      key: 'textPageAccent',
+      label: 'Accent colour',
+      placeholder: '#635bff',
+      inputType: 'text',
+      showWhen: (f) => f.textMode === 'page'
+    },
+    {
+      key: 'textPageTheme',
+      label: 'Background',
+      type: 'select',
+      options: [
+        { value: 'light', label: 'Light' },
+        { value: 'gradient', label: 'Soft gradient' },
+        { value: 'dark', label: 'Midnight' }
+      ],
+      showWhen: (f) => f.textMode === 'page'
+    },
+    { key: 'textPageBig', label: 'Large display type', type: 'checkbox', showWhen: (f) => f.textMode === 'page' }
   ],
   phone: [
     { key: 'phone', label: 'Phone number', required: true, placeholder: '+254711436169', inputType: 'tel' }
@@ -486,7 +555,7 @@ function getTitle(type, fields) {
     case 'contact':
       return fields.contactName || 'contact'
     case 'text':
-      return (fields.text || label).slice(0, 40)
+      return fields.textPageTitle || (fields.text || label).slice(0, 40)
     case 'email':
       return fields.email || 'email'
     case 'sms':
