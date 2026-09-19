@@ -1,9 +1,10 @@
 import { QR_TYPES } from '../utils/qrGenerator.js'
-import { Link as LinkIcon, Type, Phone, Mail, MessageSquare, MessageCircle, Wifi, User, MapPin, CreditCard } from 'lucide-react'
+import { Link as LinkIcon, Type, Image, Phone, Mail, MessageSquare, MessageCircle, Wifi, User, MapPin, CreditCard } from 'lucide-react'
 
 const ICONS = {
   Link: LinkIcon,
   Type,
+  Image,
   Phone,
   Mail,
   MessageSquare,

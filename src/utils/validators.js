@@ -109,6 +109,18 @@ export function validateType(type, fields) {
       if (!any) return 'Add at least one payment detail (Till, Paybill, account or instructions).'
       return null
     }
+    case 'image': {
+      if ((fields?.imageMode || 'embed') === 'url') {
+        const u = normalizeUrl(fields?.imageUrl)
+        if (!u) return 'Enter the image URL.'
+        if (!isHttpUrl(u)) return 'Enter a valid image URL (https://…).'
+        return null
+      }
+      if (!fields?.imageData) return 'Upload an image to embed.'
+      if ((fields?.imageData || '').length > 2400)
+        return 'That embedded image is too large to scan reliably. Try a smaller image.'
+      return null
+    }
     default:
       return 'Select a QR type.'
   }

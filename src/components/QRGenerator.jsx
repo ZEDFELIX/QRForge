@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
+import { Upload } from 'lucide-react'
 import { QR_TYPES, buildPayload, drawQrAsync, qrToSvg, effectiveEC } from '../utils/qrGenerator.js'
 import { validateType } from '../utils/validators.js'
+import { processImageForQr, base64Bytes } from '../utils/imageQr.js'
 import { markDownloaded } from '../utils/storage.js'
 import { loadBrandKit } from '../utils/brand.js'
 import QRTypeSelector from './QRTypeSelector.jsx'
@@ -39,7 +41,10 @@ const EMPTY_FIELDS = {
   payTillNumber: '',
   payBusinessNumber: '',
   payAccountNo: '',
-  payInstructions: ''
+  payInstructions: '',
+  imageMode: 'embed',
+  imageData: '',
+  imageUrl: ''
 }
 
 export default function QRGenerator({ initialType, initialFields, initialFg, initialBg, initialRounded }) {
@@ -310,6 +315,41 @@ function ContentFields({ type, fields, onChange }) {
         </label>
       )
     }
+    if (conf.type === 'file') {
+      return (
+        <div className="flex items-center gap-3">
+          <label className="btn-secondary cursor-pointer px-4 py-2 text-xs">
+            <Upload size={14} /> Choose image
+            <input
+              type="file"
+              accept={conf.accept}
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files && e.target.files[0]
+                if (!file) return
+                processImageForQr(file)
+                  .then((res) => onChange('imageData', res.dataUrl))
+                  .catch((err) => window.alert(err.message || 'Could not process that image.'))
+              }}
+            />
+          </label>
+          {fields.imageData ? (
+            <div className="flex items-center gap-2.5">
+              <img
+                src={fields.imageData}
+                alt="Uploaded image preview"
+                className="h-12 w-12 rounded-lg object-cover ring-1 ring-slate-200"
+              />
+              <span className="text-xs text-slate-400">
+                {Math.round((base64Bytes(fields.imageData) / 1024) * 10) / 10} KB · optimized for scannability
+              </span>
+            </div>
+          ) : (
+            <span className="text-xs text-slate-400">PNG, JPG, WebP or GIF</span>
+          )}
+        </div>
+      )
+    }
     return (
       <input
         id={key}
@@ -323,17 +363,30 @@ function ContentFields({ type, fields, onChange }) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {FIELD_SCHEMAS[type].map((conf) => (
-        <div key={conf.key} className={conf.type === 'textarea' || conf.type === 'checkbox' ? 'sm:col-span-2' : ''}>
-          <label htmlFor={conf.key} className="label">
-            {conf.label}
-            {conf.required && <span className="text-red-500"> *</span>}
-          </label>
-          {renderInput(conf)}
+    <>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {FIELD_SCHEMAS[type].map((conf) => {
+          if (conf.showWhen && !conf.showWhen(fields)) return null
+          return (
+            <div key={conf.key} className={conf.type === 'textarea' || conf.type === 'checkbox' || conf.type === 'file' ? 'sm:col-span-2' : ''}>
+              <label htmlFor={conf.key} className="label">
+                {conf.label}
+                {conf.required && <span className="text-red-500"> *</span>}
+              </label>
+              {renderInput(conf)}
+            </div>
+          )
+        })}
+      </div>
+      {type === 'image' && fields.imageMode !== 'url' && (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs leading-relaxed text-amber-800">
+          How embedded images work: for a QR to display an image, it must squeeze the whole
+          picture into the tiny pattern. We auto-compress it, but on any phone it’s better to{' '}
+          <span className="font-semibold">link to an image URL</span> — that always opens the
+          full photo on any camera app.
         </div>
-      ))}
-    </div>
+      )}
+    </>
   )
 }
 
@@ -393,6 +446,32 @@ const FIELD_SCHEMAS = {
     { key: 'payBusinessNumber', label: 'M-Pesa Paybill number', placeholder: '123456' },
     { key: 'payAccountNo', label: 'Account / Reference', placeholder: 'Order #123' },
     { key: 'payInstructions', label: 'Additional instructions', placeholder: 'Scan to pay via M-Pesa', type: 'textarea', rows: 3 }
+  ],
+  image: [
+    {
+      key: 'imageMode',
+      label: 'How the image appears when scanned',
+      type: 'select',
+      options: [
+        { value: 'embed', label: 'Embed the image directly in the QR (reader apps show it)' },
+        { value: 'url', label: 'Open an image URL on scan (any phone camera)' }
+      ]
+    },
+    {
+      key: 'imageFile',
+      label: 'Image to embed',
+      type: 'file',
+      accept: 'image/png,image/jpeg,image/webp,image/gif',
+      showWhen: (f) => f.imageMode !== 'url'
+    },
+    {
+      key: 'imageUrl',
+      label: 'Image URL',
+      required: true,
+      placeholder: 'https://example.com/photo.jpg',
+      inputType: 'url',
+      showWhen: (f) => f.imageMode === 'url'
+    }
   ]
 }
 
@@ -420,6 +499,8 @@ function getTitle(type, fields) {
       return fields.whatsappNumber || 'whatsapp'
     case 'payment':
       return fields.payBusinessName || fields.payTillNumber || 'payment'
+    case 'image':
+      return fields.imageUrl || 'image-qr'
     default:
       return label
   }

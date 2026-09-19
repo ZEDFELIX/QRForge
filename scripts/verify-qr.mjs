@@ -29,6 +29,7 @@ const cases = [
   { label: 'SMS', ec: 'M', text: 'SMSTO:+254711436169:Hello from QRForge' },
   { label: 'vCard', ec: 'H', text: 'BEGIN:VCARD\nVERSION:3.0\nFN:John Doe\nORG:Acme\nTEL:+254711436169\nEMAIL:john@example.com\nEND:VCARD' },
   { label: 'Geo', ec: 'Q', text: 'https://maps.google.com/maps?q=-1.2921,36.8219' },
+  { label: 'Image URL', ec: 'M', text: 'https://example.com/photo.jpg' },
   { label: 'Long content', ec: 'H', text: 'https://example.com/this-is-a-very-long-url-path-that-pushes-the-qr-to-a-higher-version-with-more-modules-so-we-verify-mid-size-codes-work-too?query=1234567890&ref=qrforge' }
 ]
 

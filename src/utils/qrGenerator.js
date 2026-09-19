@@ -24,6 +24,7 @@ function loadLogoImage(dataUrl) {
 export const QR_TYPES = [
   { id: 'url', label: 'URL', icon: 'Link' },
   { id: 'text', label: 'Plain Text', icon: 'Type' },
+  { id: 'image', label: 'Image', icon: 'Image' },
   { id: 'phone', label: 'Phone', icon: 'Phone' },
   { id: 'email', label: 'Email', icon: 'Mail' },
   { id: 'sms', label: 'SMS', icon: 'MessageSquare' },
@@ -83,6 +84,10 @@ export function buildPayload(type, fields) {
       if (fields.payAccountNo) parts.push(`Account/Ref: ${fields.payAccountNo}`)
       if (fields.payInstructions) parts.push(fields.payInstructions)
       return parts.join('\n').trim()
+    }
+    case 'image': {
+      if ((fields.imageMode || 'embed') === 'url') return (fields.imageUrl || '').trim()
+      return fields.imageData || ''
     }
     default:
       return ''
